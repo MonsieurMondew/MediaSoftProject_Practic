@@ -1,14 +1,25 @@
-<?php
-$text ='В город ворвалась зима. еще вчера ветер гонял по улицам опавшие листья, моросил холодный дождь. Сегодня же с 
-утра все покрылось белым. За ночь снежная туча щедро поделилась снегом, который теперь искрился и переливался в лучах 
-яркого утреннего солнца. Лицо прохожих, одетых в теплые шубы и пуховики, были радостными. Ребятишки же не скрывали 
-свой восторг и громко радовались долгожданному снегу. Возле школ развернулись настоящие снежные баталии. Многие 
-школьники, да и некоторые учителя оказались обстреляны снежками. У всех в этот день было радостное, приподнятое 
-настроение. Зима вступила в свои владения, подарив людям ощущение сказки, волшебства.';
-?>
-
-<form method="post" enctype="multipart/form-data" action="process.php">
-    <input type="file" name="docs"> <br>
-    <textarea name="" cols="60" rows="13"><?=$text?></textarea> <br>
-    <input type="submit">
-</form>
+<html>
+    <head>
+        <title>Главная страница</title>
+    </head>
+    <body>
+    <form method="post" enctype="multipart/form-data" action="uploadd_page.php">
+        <h3>Здравствуйте, гость, нажмите кнопочку, чтобы загрузить текст, который вас интересует:
+            <button name="nextBut">Загрузить</button>
+        </h3>
+    </form>
+    <h3>Тексты:</h3>
+    <?php
+    $connection = new PDO('mysql:dbname=MyFirstBD;host=localhost:3306', 'root', 'root');
+    $selectQuery = 'SELECT * FROM uploaded_text';
+    $selectRows = $connection->query($selectQuery)->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($selectRows as $selectRow):?>
+    <form method="post" action="full_information_page.php">
+        <h4><?='Текст № '.$selectRow['id'] .'.'?> <?='Содержание: '.substr($selectRow['content'],0,45) . "..."?>
+            <input type="submit" name="moreInfo" value="подробнее" >
+            <input type="hidden" name="textId" value=<?= $selectRow['id']?> >
+        </h4>
+    </form>
+    <?php endforeach;?>
+    </body>
+</html>

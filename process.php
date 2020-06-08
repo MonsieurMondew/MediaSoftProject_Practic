@@ -1,57 +1,46 @@
 <?php
 
-function check($text,$type){
+$today = date("Y-m-d h:i:s");#Дата и время сегодня
 
-    $text = mb_strtolower($text);
-    $punctuation = ['.',',','-',PHP_EOL];
-    $NewText = str_replace($punctuation, "", $text);
-    $masText = explode(" ", $NewText);
-    $countText = count($masText);
-    $NewMasText=[];
+$connection = new PDO('mysql:dbname=MyFirstBD;host=localhost:3306', 'root', 'root'); #Соединение с бд
+$query = 'INSERT INTO uploaded_text(content, date, words_count) VALUES (?,?,?)';#Запрос на добавление новых значений в таблицу uploaded_text
 
-    for($i=0;$i<count($masText);$i++){
-        if (array_key_exists($masText[$i], $NewMasText)){
-            $NewMasText[$masText[$i]]+=1;
-        }
-        else{
-            $NewMasText[$masText[$i]]=1;
-        }
-    }
+$querySecond = 'INSERT INTO word(text_id, word, count) VALUES (?,?,?)';#Запрос на добавление новых значений в таблицу word
 
-
-    if ($type ==='FileTextFile'){
-        $PathOfFile = 'FileTextFiles';
-    }
-    elseif($type === 'AreaTextFile'){
-        $PathOfFile = 'AreaTextFiles';
-    }
-    $LastMas=[];
-    foreach ($NewMasText as $key => $value){
-        array_push($LastMas, array($key,$value));
-    }
-    array_push($LastMas,array("всего слов",$countText));
-    $lastPath = "{$PathOfFile}/".rand().".csv";
-    $f = fopen($lastPath, 'w');
-    foreach ($LastMas as $lines){
-        fputcsv($f,$lines,':');
-    }
-    fclose($f);
-
-
-}
-if (!empty($_FILES['docs']['name'])){
+if (!empty($_FILES['docs']['name'])){ #Проверка на наличие файла
     $fileText = file_get_contents($_FILES['docs']['tmp_name']);
-    check($fileText,'FileTextFile');
-    }
-if (!empty($_POST['communication'])){
-    $areaText = $_POST['communication'];
-    check($areaText,'AreaTextFile');
-    }
 
-if (!is_dir("AreaTextFiles")){
-    mkdir("AreaTextFiles", 8777,true);
+    #Изменение текста
+    $text = mb_strtolower($fileText);
+    $punctuation = ['.',',','-',PHP_EOL, '!'];
+    $newText = str_replace($punctuation, "", $text);
+    $masText = explode(" ", $newText);
+
+    #Подсчет слов
+    $lastMas = array_count_values($masText);
+    $countText = count($masText);
+
+    #Добавление значений в таблицу uploaded_text
+    $insertQuery = $connection -> prepare($query);
+    $insertQuery -> execute([$fileText,$today,$countText]);
+
+    #Добавление значений в таблицу word
+    $checkQuery = 'SELECT id FROM uploaded_text order by id DESC limit 1';#Запрос для выявления последней записи в uploaded_text
+    $checkRow = $connection->query($checkQuery)-> fetch();#Создание ассоциативного массива с этой записью
+    foreach ($lastMas as $key => $value){
+        $insertQuery = $connection -> prepare($querySecond);
+        $insertQuery ->execute([$checkRow[0], $key, $value]);
     }
-if (!is_dir("FileTextFiles")){
-    mkdir("FileTextFiles", 8777,true);
 }
-
+?>
+<html>
+    <head>
+        <title>Результная страничка</title>
+    </head>
+    <body>
+    <form method="post" enctype="multipart/form-data" action="index.php">
+        <h3>Поздравляю, данные были успешно загружены!
+            <input type="submit" name="moreInfo" value="вернуться" >
+        </h3>
+    </body>
+</html>
